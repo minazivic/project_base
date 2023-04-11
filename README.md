@@ -9,3 +9,4 @@ Prazan projekat sa pratećim bibliotekama koje koristimo na času.
 5. Zaglavlja (h i hpp) fajlovi idu u include
 6. Šejderi idu u folder shaders. `Vertex shader` ima ekstenziju `.vs`, `fragment shader` ima ekstenziju `.fs`
 7. ALT+SHIFT+F10 -> project_base -> run
+   Modeli se nalaze na drajvu na sledecem linku: https://drive.google.com/drive/folders/1a7EefxhQ0f4wRn7brY6P-TurmOwktO4j?usp=share_link
