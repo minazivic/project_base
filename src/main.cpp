@@ -59,8 +59,8 @@ struct ProgramState {
     bool ImGuiEnabled = false;
     Camera camera;
     bool CameraMouseMovementUpdateEnabled = true;
-    glm::vec3 backpackPosition = glm::vec3(0.0f);
-    float backpackScale = 1.0f;
+    glm::vec3 backpackPosition = glm::vec3(1.0f,-2.0f,0.0f);
+    float backpackScale = 0.2f;
     PointLight pointLight;
     ProgramState()
             : camera(glm::vec3(0.0f, 0.0f, 3.0f)) {}
@@ -351,7 +351,7 @@ int main() {
         blendingShader.setFloat("pointLights[1].constant", pointLight.constant);
         blendingShader.setFloat("pointLights[1].linear", pointLight.linear);
         blendingShader.setFloat("pointLights[1].quadratic", pointLight.quadratic);
-        //draw ghost
+        //draw ghosts
         glm::mat4 modelG = glm::mat4(1.0f);
         modelG = glm::translate(modelG,glm::vec3(1.0f+sin(currentFrame),-1.5f+cos(currentFrame)*0.2f,0.0f+cos(currentFrame)));
         modelG = glm::scale(modelG, glm::vec3(0.1f));
@@ -367,6 +367,12 @@ int main() {
         modelG = glm::mat4(1.0f);
         modelG = glm::translate(modelG,glm::vec3(1.0f,-2.6f,4.0f));
         modelG = glm::scale(modelG, glm::vec3(sin(currentFrame)*0.5f+1.0f));
+        blendingShader.setMat4("model", modelG);
+        gModel.Draw(blendingShader);
+        //duh koga mozemo pomerati preko imGuia
+        modelG = glm::mat4(1.0f);
+        modelG = glm::translate(modelG,programState->backpackPosition);
+        modelG = glm::scale(modelG, glm::vec3(programState->backpackScale));
         blendingShader.setMat4("model", modelG);
         gModel.Draw(blendingShader);
 
@@ -465,13 +471,10 @@ void DrawImGui(ProgramState *programState) {
 
 
     {
-        static float f = 0.0f;
-        ImGui::Begin("Hello window");
-        ImGui::Text("Hello text");
-        ImGui::SliderFloat("Float slider", &f, 0.0, 1.0);
-        ImGui::ColorEdit3("Background color", (float *) &programState->clearColor);
-        ImGui::DragFloat3("Backpack position", (float*)&programState->backpackPosition);
-        ImGui::DragFloat("Backpack scale", &programState->backpackScale, 0.05, 0.1, 4.0);
+        ImGui::Begin("Hunted house");
+        ImGui::ColorEdit3("Ghost Background color", (float *) &programState->clearColor);
+        ImGui::DragFloat3("Ghost position", (float*)&programState->backpackPosition,0.005);
+        ImGui::DragFloat("Ghost scale", &programState->backpackScale, 0.001, 0.1, 4.0);
 
         ImGui::DragFloat("pointLight.constant", &programState->pointLight.constant, 0.05, 0.0, 1.0);
         ImGui::DragFloat("pointLight.linear", &programState->pointLight.linear, 0.05, 0.0, 1.0);
