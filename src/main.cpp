@@ -111,6 +111,8 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    //MSAA
+    glfwWindowHint(GLFW_SAMPLES, 4);
 
 #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -165,16 +167,27 @@ int main() {
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
     glFrontFace(GL_CW);
+    //blending
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //MSAA
+    glEnable(GL_MULTISAMPLE);//ovde sam pokusala da primenim MSAA ali se ne vidi neka razlika
 
     // build and compile shaders
     // -------------------------
     Shader ourShader("resources/shaders/ourShader.vs", "resources/shaders/ourShader.fs");
     Shader skyboxShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
+    Shader blendingShader("resources/shaders/ourShader.vs", "resources/shaders/blending.fs");
+
 
     // load models
     // -----------
+    //house
     Model hModel("resources/objects/museumHouse/model.obj");
     hModel.SetShaderTextureNamePrefix("material.");
+    //ghost
+    Model gModel("resources/objects/ghost/untitled.obj");
+    gModel.SetShaderTextureNamePrefix("material.");
 
     //skybox vertices
     float skyboxVertices[] = {
@@ -249,10 +262,9 @@ int main() {
 
 
     PointLight& pointLight = programState->pointLight;
-    pointLight.position = glm::vec3(4.0f, 4.0, 0.0);
-    pointLight.ambient = glm::vec3(0.1, 0.1, 0.1);
-    pointLight.diffuse = glm::vec3(0.6, 0.6, 0.6);
-    pointLight.specular = glm::vec3(1.0, 1.0, 1.0);
+    pointLight.ambient = glm::vec3(0.3);
+    pointLight.diffuse = glm::vec3(0.3);
+    pointLight.specular = glm::vec3(0.2);
 
     pointLight.constant = 1.0f;
     pointLight.linear = 0.09f;
@@ -284,22 +296,30 @@ int main() {
 
         // don't forget to enable shader before setting uniforms
         ourShader.use();
-        pointLight.position = glm::vec3(4.0 * cos(currentFrame), 4.0f, 4.0 * sin(currentFrame));
-        ourShader.setVec3("pointLight.position", pointLight.position);
-        ourShader.setVec3("pointLight.ambient", pointLight.ambient);
-        ourShader.setVec3("pointLight.diffuse", pointLight.diffuse);
-        ourShader.setVec3("pointLight.specular", pointLight.specular);
-        ourShader.setFloat("pointLight.constant", pointLight.constant);
-        ourShader.setFloat("pointLight.linear", pointLight.linear);
-        ourShader.setFloat("pointLight.quadratic", pointLight.quadratic);
-        ourShader.setVec3("viewPosition", programState->camera.Position);
-        ourShader.setFloat("material.shininess", 32.0f);
-        // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom),
                                                 (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = programState->camera.GetViewMatrix();
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
+
+        ourShader.setVec3("viewPosition", programState->camera.Position);
+        ourShader.setFloat("material.shininess", 32.0f);
+        //light 1
+        ourShader.setVec3("pointLights[0].position", glm::vec3(1.0f+sin(currentFrame),-1.5f+cos(currentFrame)*0.2f,0.0f+cos(currentFrame)));
+        ourShader.setVec3("pointLights[0].ambient", pointLight.ambient);
+        ourShader.setVec3("pointLights[0].diffuse", pointLight.diffuse);
+        ourShader.setVec3("pointLights[0].specular", pointLight.specular);
+        ourShader.setFloat("pointLights[0].constant", pointLight.constant);
+        ourShader.setFloat("pointLights[0].linear", pointLight.linear);
+        ourShader.setFloat("pointLights[0].quadratic", pointLight.quadratic);
+        //light 2
+        ourShader.setVec3("pointLights[1].position", glm::vec3(1.0f+cos(currentFrame),-0.5f+sin(currentFrame)*0.2f,0.0f+sin(currentFrame)));
+        ourShader.setVec3("pointLights[1].ambient", pointLight.ambient);
+        ourShader.setVec3("pointLights[1].diffuse", pointLight.diffuse);
+        ourShader.setVec3("pointLights[1].specular", pointLight.specular);
+        ourShader.setFloat("pointLights[1].constant", pointLight.constant);
+        ourShader.setFloat("pointLights[1].linear", pointLight.linear);
+        ourShader.setFloat("pointLights[1].quadratic", pointLight.quadratic);
 
         // render the loaded model
         //draw house
@@ -307,6 +327,48 @@ int main() {
         modelH = glm::scale(modelH, glm::vec3(0.25f));
         ourShader.setMat4("model", modelH);
         hModel.Draw(ourShader);
+
+        //Setup transparent shader
+        blendingShader.use();
+        blendingShader.setMat4("projection", projection);
+        blendingShader.setMat4("view", view);
+
+        blendingShader.setVec3("viewPosition", programState->camera.Position);
+        blendingShader.setFloat("material.shininess", 32.0f);
+        //light 1
+        blendingShader.setVec3("pointLights[0].position", glm::vec3(1.0f+sin(currentFrame),-1.5f+cos(currentFrame)*0.2f,0.0f+cos(currentFrame)));
+        blendingShader.setVec3("pointLights[0].ambient", pointLight.ambient);
+        blendingShader.setVec3("pointLights[0].diffuse", pointLight.diffuse);
+        blendingShader.setVec3("pointLights[0].specular", pointLight.specular);
+        blendingShader.setFloat("pointLights[0].constant", pointLight.constant);
+        blendingShader.setFloat("pointLights[0].linear", pointLight.linear);
+        blendingShader.setFloat("pointLights[0].quadratic", pointLight.quadratic);
+        //light 2
+        blendingShader.setVec3("pointLights[1].position", glm::vec3(1.0f+cos(currentFrame),-0.5f+sin(currentFrame)*0.2f,0.0f+sin(currentFrame)));
+        blendingShader.setVec3("pointLights[1].ambient", pointLight.ambient);
+        blendingShader.setVec3("pointLights[1].diffuse", pointLight.diffuse);
+        blendingShader.setVec3("pointLights[1].specular", pointLight.specular);
+        blendingShader.setFloat("pointLights[1].constant", pointLight.constant);
+        blendingShader.setFloat("pointLights[1].linear", pointLight.linear);
+        blendingShader.setFloat("pointLights[1].quadratic", pointLight.quadratic);
+        //draw ghost
+        glm::mat4 modelG = glm::mat4(1.0f);
+        modelG = glm::translate(modelG,glm::vec3(1.0f+sin(currentFrame),-1.5f+cos(currentFrame)*0.2f,0.0f+cos(currentFrame)));
+        modelG = glm::scale(modelG, glm::vec3(0.1f));
+        blendingShader.setMat4("model", modelG);
+        gModel.Draw(blendingShader);
+
+        modelG = glm::mat4(1.0f);
+        modelG = glm::translate(modelG,glm::vec3(1.0f+cos(currentFrame),-0.5f+sin(currentFrame)*0.2f,0.0f+sin(currentFrame)));
+        modelG = glm::scale(modelG, glm::vec3(0.1f));
+        blendingShader.setMat4("model", modelG);
+        gModel.Draw(blendingShader);
+
+        modelG = glm::mat4(1.0f);
+        modelG = glm::translate(modelG,glm::vec3(1.0f,-2.6f,4.0f));
+        modelG = glm::scale(modelG, glm::vec3(sin(currentFrame)*0.5f+1.0f));
+        blendingShader.setMat4("model", modelG);
+        gModel.Draw(blendingShader);
 
         //draw skybox
         glDepthFunc(GL_LEQUAL);
